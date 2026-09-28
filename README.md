@@ -69,16 +69,16 @@ make build         # собрать dist/trip-service
 | `HTTP_READ_HEADER_TIMEOUT` | таймаут чтения заголовков; по умолчанию `5s` |
 | `HTTP_WRITE_TIMEOUT` | таймаут записи ответа; по умолчанию `15s` |
 | `HTTP_IDLE_TIMEOUT` | keep-alive таймаут; по умолчанию `60s` |
-| `LOG_LEVEL` | уровень логирования: `debug`, `info`, `warning` или `error` |
-| `SHUTDOWN_TIMEOUT` | общий бюджет graceful shutdown |
+| `LOG_LEVEL` | уровень логирования: `debug`, `info`, `warning` или `error`; по умолчанию `info` |
+| `SHUTDOWN_TIMEOUT` | общий бюджет graceful shutdown; по умолчанию `10s` |
 | `DATABASE_URL` | строка подключения PostgreSQL |
-| `DATABASE_MAX_CONNS` | максимальное количество соединений пула |
-| `DATABASE_MIN_CONNS` | минимальное количество соединений пула |
-| `DATABASE_MAX_CONN_LIFETIME` | максимальное время жизни соединения |
-| `DATABASE_CONNECT_TIMEOUT` | таймаут создания пула и стартового `Ping` PostgreSQL |
-| `DATABASE_QUERY_TIMEOUT` | таймаут SQL-запросов и readiness-проверки |
+| `DATABASE_MAX_CONNS` | максимальное количество соединений пула; по умолчанию `10` |
+| `DATABASE_MIN_CONNS` | минимальное количество соединений пула; по умолчанию `2` |
+| `DATABASE_MAX_CONN_LIFETIME` | максимальное время жизни соединения; по умолчанию `30m` |
+| `DATABASE_CONNECT_TIMEOUT` | таймаут создания пула и стартового `Ping` PostgreSQL; по умолчанию `5s` |
+| `DATABASE_QUERY_TIMEOUT` | таймаут SQL-запросов и readiness-проверки; по умолчанию `3s` |
 
-Обязательные значения проверяются при старте. Размеры пула валидируются, все duration должны быть положительными.
+`HTTP_ADDR` и `DATABASE_URL` обязательны. Размеры пула валидируются, все duration должны быть положительными.
 
 ## Структура
 
@@ -119,4 +119,4 @@ docker image inspect trip-service:local --format '{{.Size}}'
 
 Финальный образ основан на `gcr.io/distroless/static-debian12:nonroot`, содержит только бинарник сервиса и запускается от пользователя `nonroot`.
 
-Фактический размер образа `trip-service:local`: `5 003 188` байт (примерно `4.77 MiB`).
+Фактический размер образа `trip-service:local`: `6 064 493` байта (примерно `5.78 MiB`).
