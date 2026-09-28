@@ -10,14 +10,14 @@ import (
 )
 
 type Config struct {
-	HTTPAddr               string        `env:"HTTP_ADDR" validate:"required"`
+	HTTPAddr               string        `env:"HTTP_ADDR" envDefault:":8080" validate:"hostname_port"`
 	HTTPReadTimeout        time.Duration `env:"HTTP_READ_TIMEOUT" envDefault:"10s" validate:"gt=0"`
 	HTTPReadHeaderTimeout  time.Duration `env:"HTTP_READ_HEADER_TIMEOUT" envDefault:"5s" validate:"gt=0"`
 	HTTPWriteTimeout       time.Duration `env:"HTTP_WRITE_TIMEOUT" envDefault:"15s" validate:"gt=0"`
 	HTTPIdleTimeout        time.Duration `env:"HTTP_IDLE_TIMEOUT" envDefault:"60s" validate:"gt=0"`
 	LogLevel               log.Level     `env:"LOG_LEVEL" envDefault:"info"`
 	ShutdownTimeout        time.Duration `env:"SHUTDOWN_TIMEOUT" envDefault:"10s" validate:"gt=0"`
-	DatabaseURL            string        `env:"DATABASE_URL" validate:"required"`
+	DatabaseURL            string        `env:"DATABASE_URL" validate:"required,url"`
 	DatabaseMaxConns       int32         `env:"DATABASE_MAX_CONNS" envDefault:"10" validate:"gt=0"`
 	DatabaseMinConns       int32         `env:"DATABASE_MIN_CONNS" envDefault:"2" validate:"gte=0"`
 	DatabaseMaxLifetime    time.Duration `env:"DATABASE_MAX_CONN_LIFETIME" envDefault:"30m" validate:"gt=0"`
