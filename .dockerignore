@@ -1,0 +1,7 @@
+.git
+.gitignore
+.env
+.tripgo
+**/*_test.go
+dist/
+.DS_Store
