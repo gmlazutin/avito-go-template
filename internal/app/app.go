@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/gmlazutin/avito-go-template/internal/api/httpv1"
@@ -29,11 +27,7 @@ type App struct {
 	shutdownTimeout time.Duration
 }
 
-func New(ctx context.Context) (*App, error) {
-	cfg, err := config.Load()
-	if err != nil {
-		return nil, fmt.Errorf("load configuration: %w", err)
-	}
+func New(ctx context.Context, cfg *config.Config) (*App, error) {
 	logger := log.Init(ServiceName, cfg.LogLevel)
 
 	pool, err := newPool(ctx, cfg)
@@ -75,20 +69,17 @@ func (a *App) Run(ctx context.Context) error {
 		serverErrors <- a.server.ListenAndServe()
 	}()
 
-	signalCtx, stopSignals := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
-	defer stopSignals()
-
 	select {
 	case err := <-serverErrors:
 		if !errors.Is(err, http.ErrServerClosed) {
 			return fmt.Errorf("serve HTTP: %w", err)
 		}
 		return nil
-	case <-signalCtx.Done():
+	case <-ctx.Done():
 		a.logger.Info("shutdown started")
 	}
 
-	shutdownCtx, cancelShutdown := context.WithTimeout(context.WithoutCancel(signalCtx), a.shutdownTimeout)
+	shutdownCtx, cancelShutdown := context.WithTimeout(context.WithoutCancel(ctx), a.shutdownTimeout)
 	defer cancelShutdown()
 	if err := a.server.Shutdown(shutdownCtx); err != nil {
 		_ = a.server.Close()
@@ -99,7 +90,7 @@ func (a *App) Run(ctx context.Context) error {
 	}
 
 	a.logger.Info("shutdown completed")
-	return nil
+	return ctx.Err()
 }
 
 func newPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, error) {
