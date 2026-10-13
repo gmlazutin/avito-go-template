@@ -3,11 +3,12 @@ package apierror
 import "net/http"
 
 const (
-	CodeInvalidRequest = "invalid_request"
-	CodeTripNotFound   = "trip_not_found"
-	CodeTripCompleted  = "trip_completed"
-	CodeDriverBusy     = "driver_busy"
-	CodeInternalError  = "internal_error"
+	CodeInvalidRequest      = "invalid_request"
+	CodeTripNotFound        = "trip_not_found"
+	CodeTripCompleted       = "trip_completed"
+	CodeDriverBusy          = "driver_busy"
+	CodeIdempotencyConflict = "idempotency_conflict"
+	CodeInternalError       = "internal_error"
 )
 
 var infos = map[string]Info{
@@ -39,6 +40,14 @@ var infos = map[string]Info{
 		Type:    "https://tripgo.example/problems/driver-busy",
 		Title:   "Driver busy",
 		Message: "Driver already has an active trip",
+		Codes: APICodes{
+			HTTPv1: http.StatusConflict,
+		},
+	},
+	CodeIdempotencyConflict: {
+		Type:    "https://tripgo.example/problems/idempotency-conflict",
+		Title:   "Idempotency conflict",
+		Message: "Idempotency-Key was already used with a different request body",
 		Codes: APICodes{
 			HTTPv1: http.StatusConflict,
 		},

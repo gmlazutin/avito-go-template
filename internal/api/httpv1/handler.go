@@ -38,7 +38,7 @@ func New(service *service.Service, database *pgxpool.Pool, queryTimeout time.Dur
 	}
 }
 
-func (h *Handler) CreateTrip(w http.ResponseWriter, r *http.Request, _ httpv1gen.CreateTripParams) {
+func (h *Handler) CreateTrip(w http.ResponseWriter, r *http.Request, params httpv1gen.CreateTripParams) {
 	var request httpv1gen.CreateTripJSONRequestBody
 	if err := decodeCreateTrip(w, r, &request); err != nil {
 		h.writeError(w, r, apierror.Wrap(apierror.CodeInvalidRequest, err))
@@ -50,7 +50,7 @@ func (h *Handler) CreateTrip(w http.ResponseWriter, r *http.Request, _ httpv1gen
 		return
 	}
 
-	trip, err := h.service.Create(r.Context(), model.NewTrip{
+	trip, created, err := h.service.Create(r.Context(), model.NewTrip{
 		UserID:   request.UserId,
 		DriverID: request.DriverId,
 		StartPoint: model.Coordinates{
@@ -62,14 +62,18 @@ func (h *Handler) CreateTrip(w http.ResponseWriter, r *http.Request, _ httpv1gen
 			Longitude: request.EndPoint.Longitude,
 		},
 		Price: request.Price,
-	})
+	}, params.IdempotencyKey)
 	if err != nil {
 		h.writeError(w, r, err)
 		return
 	}
 
-	w.Header().Set("Location", "/api/v1/trips/"+trip.ID.String())
-	writeJSON(w, http.StatusCreated, tripResponse(trip))
+	if created {
+		w.Header().Set("Location", "/api/v1/trips/"+trip.ID.String())
+		writeJSON(w, http.StatusCreated, tripResponse(trip))
+		return
+	}
+	writeJSON(w, http.StatusOK, tripResponse(trip))
 }
 
 func (h *Handler) GetTrip(w http.ResponseWriter, r *http.Request, tripID httpv1gen.TripId) {

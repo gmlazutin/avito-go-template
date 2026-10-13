@@ -8,9 +8,10 @@ import (
 )
 
 var (
-	ErrDriverBusy    = errors.New("driver already has an active trip")
-	ErrTripNotFound  = errors.New("trip not found")
-	ErrTripCompleted = errors.New("trip already completed")
+	ErrDriverBusy          = errors.New("driver already has an active trip")
+	ErrTripNotFound        = errors.New("trip not found")
+	ErrTripCompleted       = errors.New("trip already completed")
+	ErrIdempotencyConflict = errors.New("idempotency key conflicts with request")
 )
 
 type Coordinates struct {
@@ -24,6 +25,11 @@ type NewTrip struct {
 	StartPoint Coordinates
 	EndPoint   Coordinates
 	Price      int64
+}
+
+type CreateTripIdempotency struct {
+	RequestHash []byte
+	TripID      uuid.UUID
 }
 
 type Trip struct {
