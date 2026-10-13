@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -16,12 +17,14 @@ type DBTX interface {
 
 type txKey struct{}
 type TxManager struct {
-	pool *pgxpool.Pool
+	pool            *pgxpool.Pool
+	rollbackTimeout time.Duration
 }
 
-func NewTxManager(pool *pgxpool.Pool) *TxManager {
+func NewTxManager(pool *pgxpool.Pool, rollbackTimeout time.Duration) *TxManager {
 	return &TxManager{
-		pool: pool,
+		pool:            pool,
+		rollbackTimeout: rollbackTimeout,
 	}
 }
 
@@ -38,12 +41,12 @@ func (m *TxManager) Do(ctx context.Context, fn func(context.Context) error) erro
 	txCtx := context.WithValue(ctx, txKey{}, tx)
 	defer func() {
 		if recovered := recover(); recovered != nil {
-			_ = tx.Rollback(context.WithoutCancel(ctx))
+			_ = m.rollback(ctx, tx)
 			panic(recovered)
 		}
 	}()
 	if err := fn(txCtx); err != nil {
-		if rollbackErr := tx.Rollback(context.WithoutCancel(ctx)); rollbackErr != nil && rollbackErr != pgx.ErrTxClosed {
+		if rollbackErr := m.rollback(ctx, tx); rollbackErr != nil && rollbackErr != pgx.ErrTxClosed {
 			return fmt.Errorf("rollback transaction after %v: %w", err, rollbackErr)
 		}
 		return err
@@ -52,6 +55,12 @@ func (m *TxManager) Do(ctx context.Context, fn func(context.Context) error) erro
 		return fmt.Errorf("commit transaction: %w", err)
 	}
 	return nil
+}
+
+func (m *TxManager) rollback(ctx context.Context, tx pgx.Tx) error {
+	rollbackCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), m.rollbackTimeout)
+	defer cancel()
+	return tx.Rollback(rollbackCtx)
 }
 
 func executor(ctx context.Context, pool *pgxpool.Pool) DBTX {

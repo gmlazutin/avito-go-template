@@ -38,7 +38,7 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 	}
 
 	repository := postgres.NewRepository(pool, cfg.DatabaseQueryTimeout)
-	txManager := postgres.NewTxManager(pool)
+	txManager := postgres.NewTxManager(pool, cfg.DatabaseQueryTimeout)
 	tripService := service.New(repository, txManager)
 	handler := httpv1.New(tripService, pool, cfg.DatabaseQueryTimeout, logger)
 	router := chi.NewRouter()
