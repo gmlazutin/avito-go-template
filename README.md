@@ -1,122 +1,186 @@
 # TripGo Trip Service
 
-Первая лабораторная работа курса: HTTP API для создания, получения и завершения поездок с хранением данных в PostgreSQL.
+HTTP-сервис первой лабораторной работы курса: создаёт, возвращает и завершает поездки, хранит их в PostgreSQL и ведёт историю изменений статуса.
+
+## Возможности
+
+- HTTP API по OpenAPI-контракту;
+- PostgreSQL через `pgxpool`, запросы собираются `squirrel`;
+- атомарная запись поездки и истории статуса;
+- защита от двух активных поездок одного водителя и конкурентного завершения;
+- liveness `/health` и readiness `/ready`;
+- graceful shutdown по `SIGINT` и `SIGTERM`;
+- многостадийный Docker-образ на `distroless` без исходников и Go toolchain.
 
 ## Требования
 
 - Go 1.27.1;
-- Docker;
-- `tripgoctl`.
+- `tripgoctl`;
+- Docker — только для запуска контейнера и дополнительного задания.
 
-## Запуск
+## Быстрый запуск
 
-Поднять окружение и подключиться к нему:
+Из корня репозитория поднять PostgreSQL курса:
 
 ```bash
-tripgoctl cluster start
-tripgoctl environment start
-tripgoctl connect
+tripgoctl cluster start       # достаточно выполнить один раз на машине
+tripgoctl environment start   # создаёт/обновляет .env
+tripgoctl connect             # печатает адреса окружения
 ```
 
-`tripgoctl environment start` создаёт локальный `.env`. После этого применить миграции и запустить сервис:
+Применить миграции и запустить сервис:
 
 ```bash
 make migrate
 make run
 ```
 
-При старте сервис создаёт пул соединений и проверяет PostgreSQL вызовом `Ping`. Сервис по умолчанию слушает `:8080`.
+Make подключает локальный `.env` через `-include` и экспортирует его переменные рецептам. При старте сервис проверяет PostgreSQL вызовом `Ping`; если конфигурация некорректна или база недоступна, приложение не запускается. По умолчанию HTTP-сервер слушает `:8080`.
+
+Проверить сервис:
+
+```bash
+curl -fsS http://localhost:8080/health
+curl -fsS http://localhost:8080/ready
+```
+
+Обе ручки при успешной проверке возвращают:
+
+```json
+{"status":"ok"}
+```
 
 ## HTTP API
 
-В первой работе из OpenAPI-контракта используются следующие операции:
+| Метод | Путь | Успех | Назначение |
+|---|---|---:|---|
+| `POST` | `/api/v1/trips` | `201` | создать поездку |
+| `GET` | `/api/v1/trips/{tripId}` | `200` | получить поездку |
+| `POST` | `/api/v1/trips/{tripId}/finish` | `200` | завершить поездку |
+| `GET` | `/health` | `200` | проверить, что процесс работает |
+| `GET` | `/ready` | `200` / `503` | проверить доступность PostgreSQL |
 
-| Метод | Путь | Назначение |
-|---|---|---|
-| `POST` | `/api/v1/trips` | создать поездку |
-| `GET` | `/api/v1/trips/{tripId}` | получить поездку |
-| `POST` | `/api/v1/trips/{tripId}/finish` | завершить поездку |
-| `GET` | `/health` | проверить состояние процесса |
-| `GET` | `/ready` | проверить доступность PostgreSQL |
+Успешные ответы имеют `Content-Type: application/json`. Ошибки бизнес-ручек возвращаются в формате RFC 9457 с `Content-Type: application/problem+json` и стабильным полем `code` (`invalid_request`, `trip_not_found`, `trip_completed`, `driver_busy`, `internal_error`).
 
-Типы и серверный интерфейс генерируются из `contracts/openapi/trip-service.openapi.yaml` в `internal/api/httpv1/gen/api.gen.go`. Список операций первой работы задан в `oapi-codegen.yaml`.
-
-```bash
-make generate
-```
-
-Цель вызывает `go generate ./...`; директива генерации находится в `internal/api/httpv1/api.go`. Сгенерированный файл коммитится, но вручную не редактируется.
+Источник истины для API — [`contracts/openapi/trip-service.openapi.yaml`](contracts/openapi/trip-service.openapi.yaml). Типы и интерфейс сервера генерируются в `internal/api/httpv1/gen/api.gen.go`; сгенерированный файл вручную не редактируется.
 
 ## Команды
 
-```bash
-make generate      # перегенерировать OpenAPI-код
-make migrate       # применить все миграции
-make migrate-down  # откатить все миграции
-make run           # запустить сервис с переменными из .env
-make test          # запустить тесты с -race и -count=2
-make build         # собрать dist/trip-service
-```
-
-## Переменные окружения
-
-Полный безопасный пример находится в `.env.example`.
-
-| Переменная | Назначение |
+| Команда | Назначение |
 |---|---|
-| `HTTP_ADDR` | адрес HTTP-сервера; по умолчанию `:8080` |
-| `HTTP_READ_TIMEOUT` | таймаут чтения запроса; по умолчанию `10s` |
-| `HTTP_READ_HEADER_TIMEOUT` | таймаут чтения заголовков; по умолчанию `5s` |
-| `HTTP_WRITE_TIMEOUT` | таймаут записи ответа; по умолчанию `15s` |
-| `HTTP_IDLE_TIMEOUT` | keep-alive таймаут; по умолчанию `60s` |
-| `LOG_LEVEL` | уровень логирования: `debug`, `info`, `warning` или `error`; по умолчанию `info` |
-| `SHUTDOWN_TIMEOUT` | общий бюджет graceful shutdown; по умолчанию `10s` |
-| `DATABASE_URL` | строка подключения PostgreSQL |
-| `DATABASE_MAX_CONNS` | максимальное количество соединений пула; по умолчанию `10` |
-| `DATABASE_MIN_CONNS` | минимальное количество соединений пула; по умолчанию `2` |
-| `DATABASE_MAX_CONN_LIFETIME` | максимальное время жизни соединения; по умолчанию `30m` |
-| `DATABASE_CONNECT_TIMEOUT` | таймаут каждого подключения к PostgreSQL; по умолчанию `5s` |
-| `DATABASE_QUERY_TIMEOUT` | таймаут SQL-запросов, отката транзакций, стартового и внутреннего ping, readiness-проверки; по умолчанию `3s` |
+| `make generate` | перегенерировать Go-код из OpenAPI |
+| `make migrate` | применить все миграции |
+| `make migrate-down` | откатить миграции до версии `0` |
+| `make run` | запустить сервис с переменными из `.env` |
+| `make test` | выполнить `go test -race -count=2 ./...` |
+| `make build` | собрать `dist/trip-service` |
 
-`HTTP_ADDR` и `DATABASE_URL` обязательны. Размеры пула валидируются, все duration должны быть положительными.
+`make generate` вызывает `go generate ./...`; директива генерации находится в `internal/api/httpv1/api.go`, а параметры — в `oapi-codegen.yaml`.
 
-## Структура
+## Конфигурация
+
+Безопасный пример находится в [`.env.example`](.env.example). Все значения, кроме `DATABASE_URL`, имеют defaults в приложении.
+
+| Переменная | Обязательность | Default | Назначение |
+|---|---:|---:|---|
+| `HTTP_ADDR` | нет | `:8080` | адрес HTTP-сервера |
+| `HTTP_READ_TIMEOUT` | нет | `10s` | таймаут чтения запроса |
+| `HTTP_READ_HEADER_TIMEOUT` | нет | `5s` | таймаут чтения заголовков |
+| `HTTP_WRITE_TIMEOUT` | нет | `15s` | таймаут записи ответа |
+| `HTTP_IDLE_TIMEOUT` | нет | `60s` | keep-alive таймаут |
+| `LOG_LEVEL` | нет | `info` | уровень `debug`, `info`, `warn` или `error` |
+| `SHUTDOWN_TIMEOUT` | нет | `10s` | общий бюджет graceful shutdown |
+| `DATABASE_URL` | да | — | URL подключения к PostgreSQL |
+| `DATABASE_MAX_CONNS` | нет | `10` | максимум соединений пула |
+| `DATABASE_MIN_CONNS` | нет | `2` | минимум соединений пула |
+| `DATABASE_MAX_CONN_LIFETIME` | нет | `30m` | максимальное время жизни соединения |
+| `DATABASE_CONNECT_TIMEOUT` | нет | `5s` | таймаут каждой попытки подключения |
+| `DATABASE_QUERY_TIMEOUT` | нет | `3s` | таймаут SQL-запросов, rollback, стартового и внутреннего ping, readiness-проверки |
+
+Уровень логирования разбирается стандартным `slog.Level`; регистр не важен, некорректное значение останавливает приложение при загрузке конфигурации. Все duration должны быть положительными, `DATABASE_MIN_CONNS` не может превышать `DATABASE_MAX_CONNS`.
+
+## Принятые решения
+
+- Транзакции работают с уровнем `READ COMMITTED`. Конкурентные инварианты обеспечиваются атомарными SQL-операциями и ограничениями PostgreSQL, поэтому более строгий уровень изоляции здесь не нужен.
+- `TxManager` хранит `pgx.Tx` в `context.Context`; репозиторий сам выбирает транзакцию или пул. Вложенный `Do` переиспользует текущую транзакцию. Ошибка и паника приводят к rollback, успех — к commit.
+- Rollback выполняется с отдельным контекстом без отмены исходного запроса, но с `DATABASE_QUERY_TIMEOUT`. Это позволяет очистить транзакцию после разрыва клиентского запроса и не держать горутину бесконечно.
+- Создание поездки и запись начального статуса, как и завершение поездки с записью истории, выполняются атомарно. Частичный уникальный индекс `WHERE status = 'active'` запрещает две активные поездки одного водителя; PostgreSQL-код `23505` преобразуется в `driver_busy`.
+- Создание использует `INSERT ... RETURNING`, а завершение — `UPDATE ... WHERE status = 'active' RETURNING`. Ответ содержит фактически сохранённые PostgreSQL значения с микросекундной точностью; два конкурентных `finish` не могут оба завершить поездку.
+- `TIMESTAMPTZ` декодируется `pgx` в UTC, поэтому временные поля всех ответов имеют единое представление и не зависят от часового пояса процесса.
+- `/health` не обращается к БД. `/ready` выполняет `Ping` PostgreSQL с `DATABASE_QUERY_TIMEOUT` и возвращает `503`, если БД недоступна.
+- Ожидаемые ошибки преобразуются в безопасные `apierror`; внутренняя причина сохраняется для логирования, но не попадает в HTTP-ответ.
+
+## Структура проекта
 
 ```text
 cmd/trip-service/             точка входа
 contracts/openapi/            OpenAPI-контракт
-internal/api/httpv1/          HTTP v1: обработчики и валидация
+internal/api/httpv1/          HTTP-обработчики и валидация
 internal/api/httpv1/gen/      сгенерированный OpenAPI-код
-internal/apierror/            безопасные публичные ошибки API
-internal/app/                 сборка и lifecycle приложения
-internal/app/config/          загрузка конфигурации из env
+internal/apierror/            публичная модель ошибок
+internal/app/                 сборка и жизненный цикл приложения
+internal/app/config/          загрузка и валидация конфигурации
 internal/app/log/             настройка slog
 internal/db/postgres/         репозиторий и менеджер транзакций
 internal/model/               доменные модели и ошибки
 internal/service/             бизнес-логика
-migrations/                   goose-миграции PostgreSQL
+migrations/                   миграции goose
 deploy/Dockerfile             многостадийная сборка образа
-dist/                         локальные артефакты make build
 ```
-
-## Решения
-
-- Транзакции работают с уровнем `READ COMMITTED`: операции создают и изменяют одну поездку, а конкурентные инварианты закреплены атомарными операциями PostgreSQL. Более строгий уровень добавил бы повторы транзакций без пользы для текущих сценариев.
-- Менеджер транзакций кладёт `pgx.Tx` в `context.Context`; репозиторий сам выбирает транзакцию или пул. Вложенный `Do` использует текущую транзакцию. Ошибка и паника приводят к rollback, успешное выполнение — к commit.
-- Создание поездки и первая запись истории выполняются в одной транзакции. Запрет двух активных поездок водителя обеспечивает частичный уникальный индекс `WHERE status = 'active'`; PostgreSQL-код `23505` отображается в ошибку `driver_busy`.
-- Завершение выполнено одним `UPDATE ... WHERE status = 'active' RETURNING ...`. Поэтому два конкурентных запроса не могут оба завершить поездку и переписать `finished_at`; проигравший получает `trip_completed`.
-- `/health` проверяет только жизнь процесса и не обращается к БД. `/ready` с таймаутом `DATABASE_QUERY_TIMEOUT` вызывает `Ping` PostgreSQL.
-- Ожидаемые ошибки переводятся сервисом в безопасные `apierror`; внутренняя причина сохраняется для логирования, но не возвращается клиенту.
 
 ## Docker
 
-Собрать образ и проверить его размер:
+Собрать образ и вывести его размер:
 
 ```bash
 docker build -f deploy/Dockerfile -t trip-service:local .
-docker image inspect trip-service:local --format '{{.Size}}'
+docker image inspect trip-service:local --format '{{.Size}} bytes'
 ```
 
-Финальный образ основан на `gcr.io/distroless/static-debian12:nonroot`, содержит только бинарник сервиса и запускается от пользователя `nonroot`.
+Финальный слой основан на `gcr.io/distroless/static-debian12:nonroot`, содержит только статически собранный бинарник и запускается от пользователя `nonroot`. Последний локально измеренный размер образа — `6 064 493` байта (примерно `5.78 MiB`).
 
-Фактический размер образа `trip-service:local`: `6 064 493` байта (примерно `5.78 MiB`).
+### Запуск с PostgreSQL курса
+
+Поднять окружение, применить миграции и собрать образ:
+
+```bash
+tripgoctl cluster start
+tripgoctl environment start
+make migrate
+docker build -f deploy/Dockerfile -t trip-service:local .
+```
+
+В созданном `tripgoctl` файле `.env` PostgreSQL доступен по `localhost` хоста. Из контейнера для обращения к хосту нужно использовать `host.docker.internal`:
+
+```bash
+DATABASE_URL_DOCKER="$(sed -n 's/^DATABASE_URL=//p' .env | sed 's/@localhost:/@host.docker.internal:/')"
+
+docker run --rm -d \
+  --name trip-service \
+  --env-file .env \
+  --add-host host.docker.internal:host-gateway \
+  -e DATABASE_URL="$DATABASE_URL_DOCKER" \
+  -p 8080:8080 \
+  trip-service:local
+```
+
+Docker Desktop предоставляет имя `host.docker.internal` автоматически; `--add-host ...:host-gateway` добавляет его на Linux.
+
+Проверить готовность и посмотреть логи:
+
+```bash
+curl -fsS http://localhost:8080/ready
+docker logs trip-service
+```
+
+Ожидаемый ответ:
+
+```json
+{"status":"ok"}
+```
+
+Остановить и удалить контейнер:
+
+```bash
+docker stop trip-service
+```
