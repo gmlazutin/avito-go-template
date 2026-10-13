@@ -75,8 +75,8 @@ make build         # собрать dist/trip-service
 | `DATABASE_MAX_CONNS` | максимальное количество соединений пула; по умолчанию `10` |
 | `DATABASE_MIN_CONNS` | минимальное количество соединений пула; по умолчанию `2` |
 | `DATABASE_MAX_CONN_LIFETIME` | максимальное время жизни соединения; по умолчанию `30m` |
-| `DATABASE_CONNECT_TIMEOUT` | таймаут создания пула и стартового `Ping` PostgreSQL; по умолчанию `5s` |
-| `DATABASE_QUERY_TIMEOUT` | таймаут SQL-запросов, отката транзакций и readiness-проверки; по умолчанию `3s` |
+| `DATABASE_CONNECT_TIMEOUT` | таймаут каждого подключения к PostgreSQL; по умолчанию `5s` |
+| `DATABASE_QUERY_TIMEOUT` | таймаут SQL-запросов, отката транзакций, стартового и внутреннего ping, readiness-проверки; по умолчанию `3s` |
 
 `HTTP_ADDR` и `DATABASE_URL` обязательны. Размеры пула валидируются, все duration должны быть положительными.
 

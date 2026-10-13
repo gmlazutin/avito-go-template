@@ -103,6 +103,8 @@ func newPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, error) {
 	poolConfig.MaxConns = cfg.DatabaseMaxConns
 	poolConfig.MinConns = cfg.DatabaseMinConns
 	poolConfig.MaxConnLifetime = cfg.DatabaseMaxLifetime
+	poolConfig.PingTimeout = cfg.DatabaseQueryTimeout
+	poolConfig.ConnConfig.ConnectTimeout = cfg.DatabaseConnectTimeout
 	poolConfig.AfterConnect = func(_ context.Context, conn *pgx.Conn) error {
 		conn.TypeMap().RegisterType(&pgtype.Type{
 			Name:  "timestamptz",
@@ -112,13 +114,13 @@ func newPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, error) {
 		return nil
 	}
 
-	connectCtx, cancelConnect := context.WithTimeout(ctx, cfg.DatabaseConnectTimeout)
-	defer cancelConnect()
-	pool, err := pgxpool.NewWithConfig(connectCtx, poolConfig)
+	pool, err := pgxpool.NewWithConfig(ctx, poolConfig)
 	if err != nil {
 		return nil, fmt.Errorf("create database pool: %w", err)
 	}
-	if err := pool.Ping(connectCtx); err != nil {
+	pingCtx, cancelPing := context.WithTimeout(ctx, cfg.DatabaseQueryTimeout)
+	defer cancelPing()
+	if err := pool.Ping(pingCtx); err != nil {
 		pool.Close()
 		return nil, fmt.Errorf("ping database: %w", err)
 	}
