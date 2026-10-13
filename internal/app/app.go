@@ -15,6 +15,8 @@ import (
 	"github.com/gmlazutin/avito-go-template/internal/db/postgres"
 	"github.com/gmlazutin/avito-go-template/internal/service"
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -101,6 +103,14 @@ func newPool(ctx context.Context, cfg *config.Config) (*pgxpool.Pool, error) {
 	poolConfig.MaxConns = cfg.DatabaseMaxConns
 	poolConfig.MinConns = cfg.DatabaseMinConns
 	poolConfig.MaxConnLifetime = cfg.DatabaseMaxLifetime
+	poolConfig.AfterConnect = func(_ context.Context, conn *pgx.Conn) error {
+		conn.TypeMap().RegisterType(&pgtype.Type{
+			Name:  "timestamptz",
+			OID:   pgtype.TimestamptzOID,
+			Codec: &pgtype.TimestamptzCodec{ScanLocation: time.UTC},
+		})
+		return nil
+	}
 
 	connectCtx, cancelConnect := context.WithTimeout(ctx, cfg.DatabaseConnectTimeout)
 	defer cancelConnect()

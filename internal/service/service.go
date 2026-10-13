@@ -40,9 +40,11 @@ func (s *Service) Create(ctx context.Context, input model.NewTrip) (model.Trip, 
 		StartedAt:  time.Now().UTC(),
 	}
 	if err := s.txManager.Do(ctx, func(txCtx context.Context) error {
-		if err := s.repository.Create(txCtx, trip); err != nil {
+		createdTrip, err := s.repository.Create(txCtx, trip)
+		if err != nil {
 			return err
 		}
+		trip = createdTrip
 		return s.repository.AddStatusHistory(txCtx, trip.ID, nil, "active", "trip created")
 	}); err != nil {
 		wrapped := fmt.Errorf("create trip: %w", err)

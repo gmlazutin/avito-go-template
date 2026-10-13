@@ -28,24 +28,26 @@ func NewRepository(pool *pgxpool.Pool, queryTimeout time.Duration) *Repository {
 	}
 }
 
-func (r *Repository) Create(ctx context.Context, trip model.Trip) error {
+func (r *Repository) Create(ctx context.Context, trip model.Trip) (model.Trip, error) {
 	query, args, err := sqlBuilder.Insert("trips").
 		Columns("id", "user_id", "driver_id", "start_latitude", "start_longitude", "end_latitude", "end_longitude", "price", "status", "started_at").
 		Values(trip.ID, trip.UserID, trip.DriverID, trip.StartPoint.Latitude, trip.StartPoint.Longitude, trip.EndPoint.Latitude, trip.EndPoint.Longitude, trip.Price, trip.Status, trip.StartedAt).
+		Suffix("RETURNING id, user_id, driver_id, start_latitude, start_longitude, end_latitude, end_longitude, price, status, started_at, finished_at").
 		ToSql()
 	if err != nil {
-		return fmt.Errorf("build insert trip: %w", err)
+		return model.Trip{}, fmt.Errorf("build insert trip: %w", err)
 	}
 	queryCtx, cancel := context.WithTimeout(ctx, r.queryTimeout)
 	defer cancel()
-	if _, err := executor(ctx, r.pool).Exec(queryCtx, query, args...); err != nil {
+	createdTrip, err := scanTrip(executor(ctx, r.pool).QueryRow(queryCtx, query, args...))
+	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == "23505" && pgErr.ConstraintName == "trips_one_active_per_driver_idx" {
-			return model.ErrDriverBusy
+			return model.Trip{}, model.ErrDriverBusy
 		}
-		return fmt.Errorf("insert trip: %w", err)
+		return model.Trip{}, fmt.Errorf("insert trip: %w", err)
 	}
-	return nil
+	return createdTrip, nil
 }
 
 func (r *Repository) AddStatusHistory(ctx context.Context, tripID uuid.UUID, from *string, to, reason string) error {
