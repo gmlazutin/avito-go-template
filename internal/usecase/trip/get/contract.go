@@ -1,0 +1,14 @@
+//go:generate go tool mockgen -source ${GOFILE} -destination mocks_test.go -package ${GOPACKAGE}_test
+
+package get
+
+import (
+	"context"
+
+	domaintrip "github.com/gmlazutin/avito-go-template/internal/domain/trip"
+	"github.com/google/uuid"
+)
+
+type tripRepository interface {
+	Get(ctx context.Context, id uuid.UUID) (domaintrip.Trip, error)
+}
