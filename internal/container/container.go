@@ -78,11 +78,22 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 	}
 
 	repository := triprepository.NewRepository(pool, cfg.DatabaseQueryTimeout)
+	activeTrips, err := repository.CountActive(ctx)
+	if err != nil {
+		logger.WarnContext(ctx, "active trips metric initialized with zero", telemetry.Error(err))
+		activeTrips = 0
+	}
+	tripMetrics, err := telemetry.NewTripMetrics(providers.MeterProvider(), activeTrips)
+	if err != nil {
+		pool.Close()
+		shutdownProviders(ctx, providers, cfg.ShutdownTimeout)
+		return nil, fmt.Errorf("create trip metrics: %w", err)
+	}
 	txManager := transaction.NewManager(pool, cfg.DatabaseQueryTimeout)
 	clock := systemClock{}
-	createUseCase := tripcreate.New(repository, txManager, clock, uuidGenerator{})
+	createUseCase := tripcreate.New(repository, txManager, clock, uuidGenerator{}, logger, tripMetrics)
 	getUseCase := tripget.New(repository)
-	finishUseCase := tripfinish.New(repository, txManager, clock)
+	finishUseCase := tripfinish.New(repository, txManager, clock, logger, tripMetrics)
 	server := router.NewServer(
 		tripcreatehandler.NewHandler(createUseCase),
 		tripgethandler.NewHandler(getUseCase),
@@ -90,6 +101,12 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 		pool,
 		cfg.DatabaseQueryTimeout,
 	)
+	httpHandler, err := router.New(server, logger, providers.TracerProvider(), providers.MeterProvider())
+	if err != nil {
+		pool.Close()
+		shutdownProviders(ctx, providers, cfg.ShutdownTimeout)
+		return nil, fmt.Errorf("create HTTP router: %w", err)
+	}
 
 	return &App{
 		logger:    logger,
@@ -97,7 +114,7 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 		telemetry: providers,
 		server: &http.Server{
 			Addr:              cfg.HTTPAddr,
-			Handler:           router.New(server),
+			Handler:           httpHandler,
 			ReadTimeout:       cfg.HTTPReadTimeout,
 			ReadHeaderTimeout: cfg.HTTPReadHeaderTimeout,
 			WriteTimeout:      cfg.HTTPWriteTimeout,

@@ -52,6 +52,23 @@ func (r *Repository) GetForUpdate(ctx context.Context, id uuid.UUID) (domaintrip
 	return r.get(ctx, id, true)
 }
 
+func (r *Repository) CountActive(ctx context.Context) (int64, error) {
+	query, args, err := sqlBuilder.Select("count(*)").
+		From("trips").
+		Where(squirrel.Eq{"status": domaintrip.StatusActive}).
+		ToSql()
+	if err != nil {
+		return 0, fmt.Errorf("build count active trips: %w", err)
+	}
+	queryCtx, cancel := context.WithTimeout(ctx, r.queryTimeout)
+	defer cancel()
+	var count int64
+	if err := transaction.Executor(ctx, r.pool).QueryRow(queryCtx, query, args...).Scan(&count); err != nil {
+		return 0, fmt.Errorf("count active trips: %w", err)
+	}
+	return count, nil
+}
+
 func (r *Repository) get(ctx context.Context, id uuid.UUID, forUpdate bool) (domaintrip.Trip, error) {
 	builder := sqlBuilder.Select(tripColumns).From("trips").Where(squirrel.Eq{"id": id})
 	if forUpdate {

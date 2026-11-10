@@ -3,6 +3,7 @@ package create_test
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -24,6 +25,8 @@ func TestUseCaseExecuteSuccess(t *testing.T) {
 	fixture.repository.EXPECT().AddStatusHistory(
 		gomock.Any(), fixture.tripID, nil, string(domaintrip.StatusActive), "trip created",
 	).Return(nil)
+	fixture.metrics.EXPECT().TripCreated(gomock.Any())
+	fixture.logger.EXPECT().LogAttrs(gomock.Any(), slog.LevelInfo, "trip created", gomock.Any())
 
 	result, created, err := fixture.useCase.Execute(context.Background(), fixture.input, nil)
 	if err != nil {
@@ -141,6 +144,8 @@ type fixture struct {
 	txManager   *MocktxManager
 	clock       *Mockclock
 	idGenerator *MockidGenerator
+	logger      *Mocklogger
+	metrics     *MocktripMetrics
 	useCase     *create.UseCase
 	now         time.Time
 	tripID      uuid.UUID
@@ -154,6 +159,8 @@ func newFixture(t *testing.T) *fixture {
 	txManager := NewMocktxManager(ctrl)
 	clock := NewMockclock(ctrl)
 	idGenerator := NewMockidGenerator(ctrl)
+	logger := NewMocklogger(ctrl)
+	metrics := NewMocktripMetrics(ctrl)
 	now := time.Date(2026, time.November, 10, 12, 0, 0, 0, time.UTC)
 	tripID := uuid.New()
 	clock.EXPECT().Now().Return(now)
@@ -163,7 +170,9 @@ func newFixture(t *testing.T) *fixture {
 		txManager:   txManager,
 		clock:       clock,
 		idGenerator: idGenerator,
-		useCase:     create.New(repository, txManager, clock, idGenerator),
+		logger:      logger,
+		metrics:     metrics,
+		useCase:     create.New(repository, txManager, clock, idGenerator, logger, metrics),
 		now:         now,
 		tripID:      tripID,
 		input: domaintrip.NewTrip{

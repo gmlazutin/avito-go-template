@@ -3,6 +3,7 @@ package finish
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	domaintrip "github.com/gmlazutin/avito-go-template/internal/domain/trip"
 	"github.com/google/uuid"
@@ -12,10 +13,12 @@ type UseCase struct {
 	repository tripRepository
 	txManager  txManager
 	clock      clock
+	logger     logger
+	metrics    tripMetrics
 }
 
-func New(repository tripRepository, txManager txManager, clock clock) *UseCase {
-	return &UseCase{repository: repository, txManager: txManager, clock: clock}
+func New(repository tripRepository, txManager txManager, clock clock, logger logger, metrics tripMetrics) *UseCase {
+	return &UseCase{repository: repository, txManager: txManager, clock: clock, logger: logger, metrics: metrics}
 }
 
 func (uc *UseCase) Execute(ctx context.Context, id uuid.UUID) (result domaintrip.Trip, err error) {
@@ -47,5 +50,7 @@ func (uc *UseCase) Execute(ctx context.Context, id uuid.UUID) (result domaintrip
 	if err != nil {
 		return domaintrip.Trip{}, fmt.Errorf("finish trip: %w", err)
 	}
+	uc.metrics.TripCompleted(ctx)
+	uc.logger.LogAttrs(ctx, slog.LevelInfo, "trip completed", slog.String("trip_id", result.State().ID.String()))
 	return result, nil
 }

@@ -11,6 +11,7 @@ package create_test
 
 import (
 	context "context"
+	slog "log/slog"
 	reflect "reflect"
 	time "time"
 
@@ -244,4 +245,81 @@ func (m *MockidGenerator) New() uuid.UUID {
 func (mr *MockidGeneratorMockRecorder) New() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "New", reflect.TypeOf((*MockidGenerator)(nil).New))
+}
+
+// Mocklogger is a mock of logger interface.
+type Mocklogger struct {
+	ctrl     *gomock.Controller
+	recorder *MockloggerMockRecorder
+	isgomock struct{}
+}
+
+// MockloggerMockRecorder is the mock recorder for Mocklogger.
+type MockloggerMockRecorder struct {
+	mock *Mocklogger
+}
+
+// NewMocklogger creates a new mock instance.
+func NewMocklogger(ctrl *gomock.Controller) *Mocklogger {
+	mock := &Mocklogger{ctrl: ctrl}
+	mock.recorder = &MockloggerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *Mocklogger) EXPECT() *MockloggerMockRecorder {
+	return m.recorder
+}
+
+// LogAttrs mocks base method.
+func (m *Mocklogger) LogAttrs(ctx context.Context, level slog.Level, msg string, attrs ...slog.Attr) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, level, msg}
+	for _, a := range attrs {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "LogAttrs", varargs...)
+}
+
+// LogAttrs indicates an expected call of LogAttrs.
+func (mr *MockloggerMockRecorder) LogAttrs(ctx, level, msg any, attrs ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, level, msg}, attrs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LogAttrs", reflect.TypeOf((*Mocklogger)(nil).LogAttrs), varargs...)
+}
+
+// MocktripMetrics is a mock of tripMetrics interface.
+type MocktripMetrics struct {
+	ctrl     *gomock.Controller
+	recorder *MocktripMetricsMockRecorder
+	isgomock struct{}
+}
+
+// MocktripMetricsMockRecorder is the mock recorder for MocktripMetrics.
+type MocktripMetricsMockRecorder struct {
+	mock *MocktripMetrics
+}
+
+// NewMocktripMetrics creates a new mock instance.
+func NewMocktripMetrics(ctrl *gomock.Controller) *MocktripMetrics {
+	mock := &MocktripMetrics{ctrl: ctrl}
+	mock.recorder = &MocktripMetricsMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MocktripMetrics) EXPECT() *MocktripMetricsMockRecorder {
+	return m.recorder
+}
+
+// TripCreated mocks base method.
+func (m *MocktripMetrics) TripCreated(ctx context.Context) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "TripCreated", ctx)
+}
+
+// TripCreated indicates an expected call of TripCreated.
+func (mr *MocktripMetricsMockRecorder) TripCreated(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TripCreated", reflect.TypeOf((*MocktripMetrics)(nil).TripCreated), ctx)
 }

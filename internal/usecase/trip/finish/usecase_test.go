@@ -3,6 +3,7 @@ package finish_test
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -27,6 +28,8 @@ func TestUseCaseExecuteSuccess(t *testing.T) {
 	fixture.repository.EXPECT().AddStatusHistory(
 		gomock.Any(), fixture.value.State().ID, &from, string(domaintrip.StatusCompleted), "trip finished",
 	).Return(nil)
+	fixture.metrics.EXPECT().TripCompleted(gomock.Any())
+	fixture.logger.EXPECT().LogAttrs(gomock.Any(), slog.LevelInfo, "trip completed", gomock.Any())
 
 	result, err := fixture.useCase.Execute(context.Background(), fixture.value.State().ID)
 	if err != nil {
@@ -108,6 +111,8 @@ type fixture struct {
 	repository *MocktripRepository
 	txManager  *MocktxManager
 	clock      *Mockclock
+	logger     *Mocklogger
+	metrics    *MocktripMetrics
 	useCase    *tripfinish.UseCase
 	value      domaintrip.Trip
 	now        time.Time
@@ -119,13 +124,17 @@ func newFixture(t *testing.T, value domaintrip.Trip) *fixture {
 	repository := NewMocktripRepository(ctrl)
 	txManager := NewMocktxManager(ctrl)
 	clock := NewMockclock(ctrl)
+	logger := NewMocklogger(ctrl)
+	metrics := NewMocktripMetrics(ctrl)
 	now := time.Date(2026, time.November, 10, 13, 0, 0, 0, time.UTC)
 	clock.EXPECT().Now().Return(now)
 	return &fixture{
 		repository: repository,
 		txManager:  txManager,
 		clock:      clock,
-		useCase:    tripfinish.New(repository, txManager, clock),
+		logger:     logger,
+		metrics:    metrics,
+		useCase:    tripfinish.New(repository, txManager, clock, logger, metrics),
 		value:      value,
 		now:        now,
 	}

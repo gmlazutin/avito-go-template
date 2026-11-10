@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"time"
 
 	domaintrip "github.com/gmlazutin/avito-go-template/internal/domain/trip"
@@ -19,14 +20,25 @@ type UseCase struct {
 	txManager   txManager
 	clock       clock
 	idGenerator idGenerator
+	logger      logger
+	metrics     tripMetrics
 }
 
-func New(repository tripRepository, txManager txManager, clock clock, idGenerator idGenerator) *UseCase {
+func New(
+	repository tripRepository,
+	txManager txManager,
+	clock clock,
+	idGenerator idGenerator,
+	logger logger,
+	metrics tripMetrics,
+) *UseCase {
 	return &UseCase{
 		repository:  repository,
 		txManager:   txManager,
 		clock:       clock,
 		idGenerator: idGenerator,
+		logger:      logger,
+		metrics:     metrics,
 	}
 }
 
@@ -71,6 +83,10 @@ func (uc *UseCase) Execute(
 	})
 	if err != nil {
 		return domaintrip.Trip{}, false, fmt.Errorf("create trip: %w", err)
+	}
+	if created {
+		uc.metrics.TripCreated(ctx)
+		uc.logger.LogAttrs(ctx, slog.LevelInfo, "trip created", slog.String("trip_id", value.State().ID.String()))
 	}
 	return value, created, nil
 }

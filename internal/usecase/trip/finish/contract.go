@@ -4,6 +4,7 @@ package finish
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	domaintrip "github.com/gmlazutin/avito-go-template/internal/domain/trip"
@@ -23,5 +24,13 @@ type (
 
 	clock interface {
 		Now() time.Time
+	}
+
+	logger interface {
+		LogAttrs(ctx context.Context, level slog.Level, msg string, attrs ...slog.Attr)
+	}
+
+	tripMetrics interface {
+		TripCompleted(ctx context.Context)
 	}
 )
