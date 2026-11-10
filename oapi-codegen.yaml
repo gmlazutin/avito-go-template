@@ -1,0 +1,11 @@
+package: httpv1gen
+generate:
+  models: true
+  chi-server: true
+output-options:
+  include-operation-ids:
+    - createTrip
+    - getTrip
+    - finishTrip
+    - health
+    - ready
