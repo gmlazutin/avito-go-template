@@ -8,17 +8,20 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gmlazutin/avito-go-template/internal/infra/telemetry"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type App struct {
 	logger          *slog.Logger
 	pool            *pgxpool.Pool
+	telemetry       *telemetry.Providers
 	server          *http.Server
 	shutdownTimeout time.Duration
 }
 
 func (a *App) Run(ctx context.Context) error {
+	defer a.shutdownTelemetry(ctx)
 	defer a.pool.Close()
 	serverErrors := make(chan error, 1)
 	go func() {
@@ -48,4 +51,12 @@ func (a *App) Run(ctx context.Context) error {
 
 	a.logger.InfoContext(context.WithoutCancel(ctx), "shutdown completed")
 	return ctx.Err()
+}
+
+func (a *App) shutdownTelemetry(ctx context.Context) {
+	shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), a.shutdownTimeout)
+	defer cancel()
+	if err := a.telemetry.Shutdown(shutdownCtx); err != nil {
+		a.logger.WarnContext(shutdownCtx, "telemetry shutdown failed", "error", err)
+	}
 }

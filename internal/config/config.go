@@ -23,6 +23,9 @@ type Config struct {
 	DatabaseMaxLifetime    time.Duration `env:"DATABASE_MAX_CONN_LIFETIME" envDefault:"30m" validate:"gt=0"`
 	DatabaseConnectTimeout time.Duration `env:"DATABASE_CONNECT_TIMEOUT" envDefault:"5s" validate:"gt=0"`
 	DatabaseQueryTimeout   time.Duration `env:"DATABASE_QUERY_TIMEOUT" envDefault:"3s" validate:"gt=0"`
+	OTelServiceName        string        `env:"OTEL_SERVICE_NAME" envDefault:"trip-service" validate:"required"`
+	OTelProtocol           string        `env:"OTEL_EXPORTER_OTLP_PROTOCOL" envDefault:"http/protobuf" validate:"oneof=http/protobuf grpc"`
+	OTelTracesSampler      string        `env:"OTEL_TRACES_SAMPLER" envDefault:"parentbased_always_on" validate:"oneof=always_on always_off parentbased_always_on parentbased_always_off"`
 }
 
 func Load() (*Config, error) {
