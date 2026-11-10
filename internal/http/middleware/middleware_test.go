@@ -10,7 +10,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gmlazutin/avito-go-template/internal/api/httpv1/gen"
 	"github.com/go-chi/chi/v5"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -18,6 +17,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
+
+	"github.com/gmlazutin/avito-go-template/internal/api/httpv1/gen"
 )
 
 func TestChainCorrelatesRouteLogTraceAndMetrics(t *testing.T) {

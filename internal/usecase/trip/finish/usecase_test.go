@@ -7,10 +7,11 @@ import (
 	"testing"
 	"time"
 
-	domaintrip "github.com/gmlazutin/avito-go-template/internal/domain/trip"
-	tripfinish "github.com/gmlazutin/avito-go-template/internal/usecase/trip/finish"
 	"github.com/google/uuid"
 	"go.uber.org/mock/gomock"
+
+	domaintrip "github.com/gmlazutin/avito-go-template/internal/domain/trip"
+	tripfinish "github.com/gmlazutin/avito-go-template/internal/usecase/trip/finish"
 )
 
 func TestUseCaseExecuteSuccess(t *testing.T) {
@@ -110,7 +111,6 @@ func TestUseCaseExecuteRepositoryErrors(t *testing.T) {
 type fixture struct {
 	repository *MocktripRepository
 	txManager  *MocktxManager
-	clock      *Mockclock
 	logger     *Mocklogger
 	metrics    *MocktripMetrics
 	useCase    *tripfinish.UseCase
@@ -131,7 +131,6 @@ func newFixture(t *testing.T, value domaintrip.Trip) *fixture {
 	return &fixture{
 		repository: repository,
 		txManager:  txManager,
-		clock:      clock,
 		logger:     logger,
 		metrics:    metrics,
 		useCase:    tripfinish.New(repository, txManager, clock, logger, metrics),

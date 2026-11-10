@@ -8,8 +8,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gmlazutin/avito-go-template/internal/infra/telemetry"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/gmlazutin/avito-go-template/internal/infra/telemetry"
 )
 
 type App struct {

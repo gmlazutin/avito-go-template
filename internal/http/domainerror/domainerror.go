@@ -97,11 +97,11 @@ func Problem(err error) (int, httpv1gen.Problem) {
 	}
 }
 
-func newProblem(status int, code, title, detail, kind string) (int, httpv1gen.Problem) {
-	return status, httpv1gen.Problem{
+func newProblem(status int32, code, title, detail, kind string) (int, httpv1gen.Problem) {
+	return int(status), httpv1gen.Problem{
 		Type:   "https://tripgo.example/problems/" + kind,
 		Title:  title,
-		Status: int32(status),
+		Status: status,
 		Detail: &detail,
 		Code:   code,
 	}

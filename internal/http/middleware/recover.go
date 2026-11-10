@@ -14,7 +14,7 @@ func Recover(next http.Handler) http.Handler {
 				err := fmt.Errorf("panic recovered: %v", recovered)
 				recorder := recorderFrom(w)
 				if recorder != nil {
-					_, _, _, wroteHeader := recorder.snapshot()
+					_, _, wroteHeader, _ := recorder.snapshot()
 					if wroteHeader {
 						return
 					}

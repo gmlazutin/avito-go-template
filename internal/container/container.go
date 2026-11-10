@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/exaring/otelpgx"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/gmlazutin/avito-go-template/internal/config"
 	"github.com/gmlazutin/avito-go-template/internal/http/router"
 	tripcreatehandler "github.com/gmlazutin/avito-go-template/internal/http/trip/create"
@@ -20,8 +23,6 @@ import (
 	tripcreate "github.com/gmlazutin/avito-go-template/internal/usecase/trip/create"
 	tripfinish "github.com/gmlazutin/avito-go-template/internal/usecase/trip/finish"
 	tripget "github.com/gmlazutin/avito-go-template/internal/usecase/trip/get"
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 const ServiceName = "trip-service"

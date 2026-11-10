@@ -7,10 +7,11 @@ import (
 	"time"
 
 	"github.com/Masterminds/squirrel"
-	"github.com/gmlazutin/avito-go-template/internal/infra/postgres/transaction"
-	"github.com/gmlazutin/avito-go-template/internal/model"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+
+	"github.com/gmlazutin/avito-go-template/internal/infra/postgres/transaction"
+	"github.com/gmlazutin/avito-go-template/internal/model"
 )
 
 func (r *Repository) DeleteExpiredCreateTripIdempotency(ctx context.Context, now time.Time) error {

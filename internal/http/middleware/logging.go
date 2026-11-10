@@ -7,10 +7,11 @@ import (
 	"runtime/debug"
 	"time"
 
-	"github.com/gmlazutin/avito-go-template/internal/http/domainerror"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+
+	"github.com/gmlazutin/avito-go-template/internal/http/domainerror"
 )
 
 func Logging(next http.Handler, logger *slog.Logger) http.Handler {
@@ -36,7 +37,7 @@ func logRequest(r *http.Request, recorder *responseRecorder, logger *slog.Logger
 	var requestErr error
 	var stack []byte
 	if recorder != nil {
-		status, requestErr, stack, _ = recorder.snapshot()
+		status, stack, _, requestErr = recorder.snapshot()
 	}
 	attributes := []any{
 		"method", r.Method,

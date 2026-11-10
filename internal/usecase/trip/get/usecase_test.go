@@ -6,10 +6,11 @@ import (
 	"testing"
 	"time"
 
-	domaintrip "github.com/gmlazutin/avito-go-template/internal/domain/trip"
-	tripget "github.com/gmlazutin/avito-go-template/internal/usecase/trip/get"
 	"github.com/google/uuid"
 	"go.uber.org/mock/gomock"
+
+	domaintrip "github.com/gmlazutin/avito-go-template/internal/domain/trip"
+	tripget "github.com/gmlazutin/avito-go-template/internal/usecase/trip/get"
 )
 
 func TestUseCaseExecute(t *testing.T) {

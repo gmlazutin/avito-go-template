@@ -9,12 +9,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"go.uber.org/mock/gomock"
+
 	"github.com/gmlazutin/avito-go-template/internal/api/httpv1/gen"
 	domaintrip "github.com/gmlazutin/avito-go-template/internal/domain/trip"
 	"github.com/gmlazutin/avito-go-template/internal/http/domainerror"
 	tripfinish "github.com/gmlazutin/avito-go-template/internal/http/trip/finish"
-	"github.com/google/uuid"
-	"go.uber.org/mock/gomock"
 )
 
 func TestHandler(t *testing.T) {

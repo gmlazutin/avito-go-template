@@ -7,8 +7,9 @@ import (
 	"log/slog"
 	"time"
 
-	domaintrip "github.com/gmlazutin/avito-go-template/internal/domain/trip"
 	"github.com/google/uuid"
+
+	domaintrip "github.com/gmlazutin/avito-go-template/internal/domain/trip"
 )
 
 type (

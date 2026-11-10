@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	domaintrip "github.com/gmlazutin/avito-go-template/internal/domain/trip"
 	"github.com/google/uuid"
+
+	domaintrip "github.com/gmlazutin/avito-go-template/internal/domain/trip"
 )
 
 type UseCase struct {

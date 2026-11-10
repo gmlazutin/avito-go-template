@@ -9,13 +9,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"go.uber.org/mock/gomock"
+
 	"github.com/gmlazutin/avito-go-template/internal/api/httpv1/gen"
 	domaintrip "github.com/gmlazutin/avito-go-template/internal/domain/trip"
 	"github.com/gmlazutin/avito-go-template/internal/http/domainerror"
 	tripcreate "github.com/gmlazutin/avito-go-template/internal/http/trip/create"
-	"github.com/google/uuid"
-	"go.uber.org/mock/gomock"
 )
+
+const contentTypeJSON = "application/json"
 
 const validBody = `{
   "user_id":"5cb72c04-7650-45c9-a79b-bcdba0631e0c",
@@ -32,7 +35,7 @@ func TestHandlerSuccess(t *testing.T) {
 	useCase := NewMockuseCase(ctrl)
 	value := mustTrip(t)
 	useCase.EXPECT().Execute(gomock.Any(), gomock.Any(), nil).Return(value, true, nil)
-	recorder := performRequest(tripcreate.NewHandler(useCase), validBody, "application/json")
+	recorder := performRequest(tripcreate.NewHandler(useCase), validBody, contentTypeJSON)
 
 	if recorder.Code != http.StatusCreated {
 		t.Fatalf("expected status 201, got %d", recorder.Code)
@@ -53,10 +56,10 @@ func TestHandlerErrors(t *testing.T) {
 		wantStatus int
 		wantCode   string
 	}{
-		{name: "invalid body", body: `{`, content: "application/json", wantStatus: http.StatusBadRequest, wantCode: domainerror.CodeInvalidRequest},
+		{name: "invalid body", body: `{`, content: contentTypeJSON, wantStatus: http.StatusBadRequest, wantCode: domainerror.CodeInvalidRequest},
 		{name: "missing content type", body: validBody, wantStatus: http.StatusBadRequest, wantCode: domainerror.CodeInvalidRequest},
-		{name: "driver busy", body: validBody, content: "application/json", useCaseErr: domaintrip.ErrDriverBusy, wantStatus: http.StatusConflict, wantCode: domainerror.CodeDriverBusy},
-		{name: "internal", body: validBody, content: "application/json", useCaseErr: errors.New("database password=secret"), wantStatus: http.StatusInternalServerError, wantCode: domainerror.CodeInternalError},
+		{name: "driver busy", body: validBody, content: contentTypeJSON, useCaseErr: domaintrip.ErrDriverBusy, wantStatus: http.StatusConflict, wantCode: domainerror.CodeDriverBusy},
+		{name: "internal", body: validBody, content: contentTypeJSON, useCaseErr: errors.New("database password=secret"), wantStatus: http.StatusInternalServerError, wantCode: domainerror.CodeInternalError},
 	}
 
 	for _, test := range tests {

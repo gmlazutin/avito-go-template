@@ -5,11 +5,12 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/gmlazutin/avito-go-template/internal/api/httpv1/gen"
-	httpmiddleware "github.com/gmlazutin/avito-go-template/internal/http/middleware"
 	"github.com/go-chi/chi/v5"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
+
+	"github.com/gmlazutin/avito-go-template/internal/api/httpv1/gen"
+	httpmiddleware "github.com/gmlazutin/avito-go-template/internal/http/middleware"
 )
 
 func New(

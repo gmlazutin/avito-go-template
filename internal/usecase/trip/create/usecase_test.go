@@ -7,11 +7,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"go.uber.org/mock/gomock"
+
 	domaintrip "github.com/gmlazutin/avito-go-template/internal/domain/trip"
 	"github.com/gmlazutin/avito-go-template/internal/model"
 	"github.com/gmlazutin/avito-go-template/internal/usecase/trip/create"
-	"github.com/google/uuid"
-	"go.uber.org/mock/gomock"
 )
 
 func TestUseCaseExecuteSuccess(t *testing.T) {
@@ -140,16 +141,14 @@ func TestUseCaseExecuteRollsBackOnHistoryError(t *testing.T) {
 }
 
 type fixture struct {
-	repository  *MocktripRepository
-	txManager   *MocktxManager
-	clock       *Mockclock
-	idGenerator *MockidGenerator
-	logger      *Mocklogger
-	metrics     *MocktripMetrics
-	useCase     *create.UseCase
-	now         time.Time
-	tripID      uuid.UUID
-	input       domaintrip.NewTrip
+	repository *MocktripRepository
+	txManager  *MocktxManager
+	logger     *Mocklogger
+	metrics    *MocktripMetrics
+	useCase    *create.UseCase
+	now        time.Time
+	tripID     uuid.UUID
+	input      domaintrip.NewTrip
 }
 
 func newFixture(t *testing.T) *fixture {
@@ -166,15 +165,13 @@ func newFixture(t *testing.T) *fixture {
 	clock.EXPECT().Now().Return(now)
 	idGenerator.EXPECT().New().Return(tripID)
 	return &fixture{
-		repository:  repository,
-		txManager:   txManager,
-		clock:       clock,
-		idGenerator: idGenerator,
-		logger:      logger,
-		metrics:     metrics,
-		useCase:     create.New(repository, txManager, clock, idGenerator, logger, metrics),
-		now:         now,
-		tripID:      tripID,
+		repository: repository,
+		txManager:  txManager,
+		logger:     logger,
+		metrics:    metrics,
+		useCase:    create.New(repository, txManager, clock, idGenerator, logger, metrics),
+		now:        now,
+		tripID:     tripID,
 		input: domaintrip.NewTrip{
 			UserID:     uuid.New(),
 			DriverID:   uuid.New(),

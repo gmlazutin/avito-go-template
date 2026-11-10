@@ -61,10 +61,10 @@ func (w *responseRecorder) recordPanic(err error, stack []byte) {
 	}
 }
 
-func (w *responseRecorder) snapshot() (status int, err error, stack []byte, wroteHeader bool) {
+func (w *responseRecorder) snapshot() (status int, stack []byte, wroteHeader bool, err error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	return w.status, w.err, append([]byte(nil), w.panicStack...), w.wroteHeader
+	return w.status, append([]byte(nil), w.panicStack...), w.wroteHeader, w.err
 }
 
 func recorderFrom(w http.ResponseWriter) *responseRecorder {

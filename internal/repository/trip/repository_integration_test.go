@@ -9,12 +9,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	domaintrip "github.com/gmlazutin/avito-go-template/internal/domain/trip"
 	infrapostgres "github.com/gmlazutin/avito-go-template/internal/infra/postgres"
 	"github.com/gmlazutin/avito-go-template/internal/infra/postgres/transaction"
 	triprepository "github.com/gmlazutin/avito-go-template/internal/repository/trip"
-	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 const integrationTimeout = 5 * time.Second

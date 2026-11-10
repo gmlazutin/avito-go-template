@@ -7,11 +7,12 @@ import (
 	"time"
 
 	"github.com/Masterminds/squirrel"
-	domaintrip "github.com/gmlazutin/avito-go-template/internal/domain/trip"
-	"github.com/gmlazutin/avito-go-template/internal/infra/postgres/transaction"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+
+	domaintrip "github.com/gmlazutin/avito-go-template/internal/domain/trip"
+	"github.com/gmlazutin/avito-go-template/internal/infra/postgres/transaction"
 )
 
 const tripColumns = "id, user_id, driver_id, start_latitude, start_longitude, " +
