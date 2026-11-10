@@ -4,21 +4,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/gmlazutin/avito-go-template/internal/app"
-	"github.com/gmlazutin/avito-go-template/internal/app/config"
-	"github.com/gmlazutin/avito-go-template/internal/app/log"
+	"github.com/gmlazutin/avito-go-template/internal/config"
+	"github.com/gmlazutin/avito-go-template/internal/container"
+	"github.com/gmlazutin/avito-go-template/internal/infra/telemetry"
 )
 
 func main() {
-	slog.SetDefault(log.InitBootstrap(app.ServiceName))
-
+	logger := container.BootstrapLogger()
 	if err := run(); err != nil && !errors.Is(err, context.Canceled) {
-		slog.Error("application failed", log.Error(err))
+		logger.Error("application failed", telemetry.Error(err))
 		os.Exit(1)
 	}
 }
@@ -32,7 +30,7 @@ func run() error {
 		return fmt.Errorf("load configuration: %w", err)
 	}
 
-	application, err := app.New(ctx, cfg)
+	application, err := container.New(ctx, cfg)
 	if err != nil {
 		return fmt.Errorf("initialize application: %w", err)
 	}
