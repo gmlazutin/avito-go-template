@@ -10,6 +10,7 @@ import (
 	"github.com/exaring/otelpgx"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/gmlazutin/avito-go-template/internal/config"
 	"github.com/gmlazutin/avito-go-template/internal/http/router"
@@ -56,6 +57,8 @@ func New(ctx context.Context, cfg *config.Config) (*App, error) {
 		otelpgx.WithTracerProvider(providers.TracerProvider()),
 		otelpgx.WithMeterProvider(providers.MeterProvider()),
 		otelpgx.WithMetricOperationName(otelpgx.SQLOperationName),
+		otelpgx.WithTracerAttributes(attribute.String("db.collection.name", "trips")),
+		otelpgx.WithMeterAttributes(attribute.String("db.collection.name", "trips")),
 	)
 	pool, err := infrapostgres.NewPool(ctx, infrapostgres.PoolConfig{
 		URL:            cfg.DatabaseURL,
