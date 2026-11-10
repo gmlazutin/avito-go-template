@@ -135,7 +135,29 @@ func hashInput(input domaintrip.NewTrip, enabled bool) ([]byte, error) {
 	if !enabled {
 		return nil, nil
 	}
-	payload, err := json.Marshal(input)
+	type coordinates struct {
+		Latitude  float64 `json:"latitude"`
+		Longitude float64 `json:"longitude"`
+	}
+	payload, err := json.Marshal(struct {
+		UserID     uuid.UUID   `json:"user_id"`
+		DriverID   uuid.UUID   `json:"driver_id"`
+		StartPoint coordinates `json:"start_point"`
+		EndPoint   coordinates `json:"end_point"`
+		Price      int64       `json:"price"`
+	}{
+		UserID:   input.UserID,
+		DriverID: input.DriverID,
+		StartPoint: coordinates{
+			Latitude:  input.StartPoint.Latitude,
+			Longitude: input.StartPoint.Longitude,
+		},
+		EndPoint: coordinates{
+			Latitude:  input.EndPoint.Latitude,
+			Longitude: input.EndPoint.Longitude,
+		},
+		Price: input.Price,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("marshal input: %w", err)
 	}
